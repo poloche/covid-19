@@ -49,11 +49,20 @@ class MainView : View("Covid-19 Follow up") {
         //2. Parses and scrapes the HTML response
         val date = doc.select("div.content-inner").first().child(4)
         appendText(getFormattedDate(date))
+        var cases = 0
+        var death = 0
+        var recovered = 0
         doc.select("div#maincounter-wrap").forEachIndexed { index, element ->
             println(element.text())
-            appendText(getNumericValue(element) + ",")
+            when (index) {
+                0 -> cases = getNumericValue(element)
+                1 -> death = getNumericValue(element)
+                else -> recovered = getNumericValue(element)
+            }
         }
-        appendText(System.getProperty("line.separator"))
+        var actives = cases-death-recovered
+        appendText("$cases,$recovered,$death,$actives"+System.getProperty("line.separator"))
+
 
         loadFromFile()
     }
@@ -61,7 +70,7 @@ class MainView : View("Covid-19 Follow up") {
     private fun loadFromFile() {
         var i = 0
         File(path).forEachLine {
-            if (i != 0) {
+            if (i != 0 && it.isNotBlank()) {
 
                 val line = it.split(",")
                 val fecha = line[0]
@@ -71,7 +80,7 @@ class MainView : View("Covid-19 Follow up") {
                 total.add(XYChart.Data(fecha, totalCasos))
                 curados.add(XYChart.Data(fecha, totalCurados))
                 fallecidos.add(XYChart.Data(fecha, totalFallecidos))
-                val casosActivos = totalCasos-totalCurados-totalFallecidos
+                val casosActivos = totalCasos - totalCurados - totalFallecidos
                 activos.add(XYChart.Data(line[0], casosActivos))
             }
             i++
@@ -98,8 +107,8 @@ class MainView : View("Covid-19 Follow up") {
         }
     }
 
-    private fun getNumericValue(element: Element): String {
+    private fun getNumericValue(element: Element): Int {
         val textValue = element.text().split(":")[1]
-        return textValue.replace(",", "").trim().toInt().toString()
+        return textValue.replace(",", "").trim().toInt()
     }
 }
